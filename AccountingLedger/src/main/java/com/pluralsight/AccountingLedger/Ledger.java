@@ -1,5 +1,11 @@
 package com.pluralsight.AccountingLedger;
 
+import com.pluralsight.AccountingLedger.Data.TransactionDao;
+import jakarta.transaction.Transaction;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+
 import java.io.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -8,7 +14,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
 
-public class Ledger {
+@Component
+public class Ledger implements CommandLineRunner {
 
     /*
     Ledger allows users to keep record of financial transactions by
@@ -16,6 +23,8 @@ public class Ledger {
     including all, monthly, yearly and a search by vendor option
      */
 
+    @Autowired
+    private TransactionDao transactionDao;
 
     // Create a scanner object for user input
     static Scanner scanner = new Scanner(System.in);
@@ -28,11 +37,19 @@ public class Ledger {
     // Create a static ArrayList for sorting
     static ArrayList<String> entries = new ArrayList<>();
 
+    @Override
+    public void run(String... args) throws Exception {
+        // The new main method, call homeScreen here
+        System.out.println("Welcome to your Ledger");
+        homeScreen();
+    }
+
 
     public static void main(String[] args) {
         System.out.println("Welcome to Ledger");
         homeScreen();
     }
+
 
     public static void homeScreen() {
         // Display the home screen
@@ -112,7 +129,7 @@ public class Ledger {
         System.out.println("2) Previous Month");
         System.out.println("3) Year To Date");
         System.out.println("4) Previous Year");
-        System.out.println("5) Search by Vendor");
+        System.out.println("5) Custom Search");
         System.out.println("6) Back");
 
         try {
@@ -136,8 +153,7 @@ public class Ledger {
                 previousYear();
                 viewReports();
             } else if (choice==5) {
-                searchByVendor();
-                viewReports();
+                customSearch();
             } else if (choice==6) {
                 ledgerScreen();
             } else {
@@ -148,6 +164,50 @@ public class Ledger {
             System.out.println("Invalid Input");
             scanner.nextLine();
             viewReports();
+        }
+    }
+
+    public static void customSearch() {
+        System.out.println("Custom Search: \n\t" +
+                "1) Search By Description\n\t" +
+                "2) Search By Vendor\n\t" +
+                "3) Search By Date\n\t" +
+                "4) Search By Amount\n\t" +
+                "5) Back\n\t" +
+                "0) Home");
+        try {
+            int selection = scanner.nextInt();
+            switch (selection) {
+                case 1:
+                    searchByName();
+                    customSearch();
+                    break;
+                case 2:
+                    searchByVendor();
+                    customSearch();
+                    break;
+                case 3:
+                    searchByDate();
+                    customSearch();
+                    break;
+                case 4:
+                    searchByAmount();
+                    customSearch();
+                case 5:
+                    viewReports();
+                    break;
+                case 0:
+                    homeScreen();
+                    break;
+                default:
+                    System.out.println("Invalid input");
+                    customSearch();
+                    break;
+            }
+        } catch (Exception e) {
+            scanner.nextLine();
+            System.out.println("Invalid input");
+            customSearch();
         }
     }
 
@@ -235,6 +295,7 @@ public class Ledger {
         String input;
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader("ledger.csv"));
+            // while loop
             while ((input = bufferedReader.readLine()) != null) {
                 String[] tokens = input.split("\\|");
                 if (Double.parseDouble(tokens[4]) > 0) {
@@ -297,6 +358,7 @@ public class Ledger {
     // Sorts, prints and clears the ArrayList
     public static void sortArray(ArrayList<String> items){
         Collections.reverse(items);
+        // for loop
         for (String entry : items){
             System.out.println(entry);
         }
@@ -381,6 +443,75 @@ public class Ledger {
                 }
             }
             System.out.println("All entries from "+vendor);
+            sortArray(entries);
+            bufferedReader.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void searchByName() {
+        // Prompt user for the name of the transaction
+        System.out.print("Please enter the name of the transaction : ");
+        String description = scanner.nextLine();
+
+        String input;
+        // Read and query the csv file for entries from that description
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader("ledger.csv"));
+            while ((input = bufferedReader.readLine()) != null) {
+                String[] tokens = input.split("\\|");
+                if (tokens[2].equalsIgnoreCase(description)) {
+                    entries.add(input);
+                }
+            }
+            System.out.println("All entries matching " + description);
+            sortArray(entries);
+            bufferedReader.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void searchByDate() {
+        // Prompt user for the name of the transaction
+        System.out.print("Please enter the date: ");
+        String date = scanner.nextLine();
+
+        String input;
+        // Read and query the csv file for entries from that description
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader("ledger.csv"));
+            while ((input = bufferedReader.readLine()) != null) {
+                String[] tokens = input.split("\\|");
+                if (tokens[0].equalsIgnoreCase(date)) {
+                    entries.add(input);
+                }
+            }
+            System.out.println("All entries on " + date);
+            sortArray(entries);
+            bufferedReader.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void searchByAmount() {
+        // Prompt user for the name of the transaction
+        System.out.print("Please enter the amount: ");
+        double amount = scanner.nextDouble();
+
+        String input;
+        // Read and query the csv file for entries from that description
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader("ledger.csv"));
+            while ((input = bufferedReader.readLine()) != null) {
+                String[] tokens = input.split("\\|");
+                if (Double.parseDouble(tokens[4]) == amount) {
+                    entries.add(input);
+                }
+            }
+            System.out.println("All entries matching " + amount);
             sortArray(entries);
             bufferedReader.close();
         } catch (IOException e) {

@@ -7,10 +7,11 @@ public class Transaction {
     private String vendor;
     private double amount;
 
-    // Default/Empty constructor
+    // Constructor
     public Transaction(String description, String vendor, double amount){
         this.description = description;
-        this.
+        this.vendor = vendor;
+        this.amount = amount;
     };
 
     // All arguments constructor
